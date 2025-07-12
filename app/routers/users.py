@@ -1,0 +1,69 @@
+from fastapi import APIRouter, Request
+from app.services.users import UserService
+from typing import Dict
+from fastapi import FastAPI, HTTPException, Depends
+from functools import wraps
+
+from app.services.users import *
+from app.dependencies import get_user_collection
+
+router = APIRouter(
+    prefix="/users",
+    tags=["users"],
+)
+
+def handle_exceptions(func):
+    """
+    Wrapper for exception hanlding
+    """
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        try:
+            return await func(*args, **kwargs)
+        except UserAlreadyExistsError as e:
+            raise HTTPException(status_code=409, detail="User already exists")
+        except UserNotFoundError as e:
+            raise HTTPException(status_code=404, detail="User not found")
+        except InvalidCredentialsError as e:
+            raise HTTPException(status_code=401, detail="Invalid username or password")
+        except NoFieldsToUpdateError as e:
+            raise HTTPException(status_code=400, detail="No fields to update")
+        
+    return wrapper
+
+
+# CRUD operations for users
+
+user_service = UserService()
+
+@router.get("/test")
+@handle_exceptions
+async def test_route(user_collection=Depends(get_user_collection)):
+    breakpoint()
+    return {"message": "hello world!"}
+
+@router.post("/", response_model=UserResponse)
+@handle_exceptions
+async def create_user(user_data: UserCreate):
+    # breakpoint()
+    return user_service.create_user(user_data)
+
+@router.get("/{user_id}", response_model=UserResponse)
+@handle_exceptions
+async def get_user(user_id: str):
+    return user_service.get_user(user_id)
+
+@router.put("/{user_id}", response_model=UserResponse)
+@handle_exceptions
+async def update_user(user_id: str, user_data: UserUpdate):
+    return user_service.update_user(user_id, user_data)
+
+@router.delete("/{user_id}")
+@handle_exceptions
+async def delete_user(user_id: str):
+    return user_service.delete_user(user_id)
+
+@router.post("/auth/{user_id}")
+@handle_exceptions
+async def authenticate_user(user_id: str):
+    return user_service.authenticate_user() 
