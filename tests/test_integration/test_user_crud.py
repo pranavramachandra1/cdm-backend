@@ -1,85 +1,58 @@
 import pytest
-from datetime import datetime
 
-from app.routers.users import create_user, get_user
-from app.services.users import UserCreate, UserUpdate, UserResponse
-from app.database import get_test_user_service, get_test_list_service, get_test_task_service, cleanup
-from app.dependencies import get_mongo_db
+from app.database import cleanup_test_dbs, get_test_user_service
+from app.services.users import UserCreate, UserResponse, UserService
+
 
 class TestUserCrud:
-
     """
     Testing CRUD functionalities for CRUD operations
     related to users
-    """    
+    """
 
-    @pytest.fixture(autouse=True)
-    async def run_cleanup(self, mock_user_service):
-        """
-        Automatically runs cleanup after each test function.
-        """
-        print("run_cleanup fixture started")
+    @pytest.fixture(scope="session", autouse=True)  # Add autouse=True
+    def cleanup(self):
         yield
-        print("run_cleanup fixture running cleanup")
-        await cleanup(user_service=mock_user_service)
-        print("run_cleanup fixture completed")
-    
+        cleanup_test_dbs()
+
     @pytest.fixture
-    def mock_user_create(self):
+    def user_create_data(self):
         return UserCreate(
-            username = "username1",
-            email = "johndoe123@gmail.com",
-            password = "password",
-            phone_number = "(847)-732-0621",
-            first_name = "John",
-            last_name = "Doe",
-            google_id = "test123"
+            username="johndoe123",
+            email="johndoe123@gmail.com",
+            password="password",
+            phone_number="(847)-732-0621",
+            first_name="John",
+            last_name="Doe",
+            google_id="google-id",
         )
-    
+
     @pytest.fixture
-    def mock_user_service(self):
-        """
-        Returns the test user service
-        """
+    def user_service(self):
         return get_test_user_service()
-    
-    # @pytest.mark.asyncio
-    # async def test_cleanup(self, mock_user_service, mock_user_create):
-    #     user_response = await create_user(user_data=mock_user_create, user_service=mock_user_service)
-    #     # Collection should exist
-    #     assert mock_user_service.user_collection.name in get_mongo_db().list_collection_names()
-    #     # Run cleanup explicitly
-    #     await cleanup(user_service=mock_user_service)
-    #     # Collection should be gone
-    #     assert mock_user_service.user_collection.name not in get_mongo_db().list_collection_names()
-    
-    @pytest.mark.asyncio
-    @pytest.mark.usefixtures('run_cleanup')
-    async def test_create_get_user(self, mock_user_create, mock_user_service):
-        """
-        Tests creation and deletion of 
-        """
 
-        # create user:
+    def test_user_create_get_delete(self, user_service: UserService, user_create_data):
 
-        user_response = await create_user(user_data = mock_user_create, user_service=mock_user_service)
+        # Create user:
+        user_create_response = user_service.create_user(user_data=user_create_data)
 
-        # check if user data is correct:
-        assert user_response.username == "username1", "Username is incorrect"
-        assert user_response.email == "johndoe123@gmail.com", "Email is incorrect"
-        assert user_response.phone_number == "(847)-732-0621", "Phone number is incorrect"
-        assert user_response.first_name == "John", "First name is incorrect"
-        assert user_response.last_name == "Doe", "Last name is incorrect"
+        # Check if ground-truth response model is correct:
+        assert user_create_response.username == "johndoe123", "Username is not correct"
+        assert (
+            user_create_response.email == "johndoe123@gmail.com"
+        ), "Email is not correct"
+        assert (
+            user_create_response.phone_number == "(847)-732-0621"
+        ), "Phone number is not correct"
+        assert user_create_response.first_name == "John", "First name is not correct"
+        assert user_create_response.last_name == "Doe", "Last name is not correct"
 
-        # breakpoint()
+        # Retrieve user:
+        user_get_response = user_service.get_user(user_id=user_create_response.user_id)
 
-        # get user again
-        get_user_response = await get_user(user_response.user_id, user_service=mock_user_service)
+        user_create_response_dict = user_create_response.model_dump()
+        user_get_response_dict = user_get_response.model_dump()
 
-        # breakpoint()
-
-        # assert user_response == get_user_response, "Responses are not equivalent"
-
-        # breakpoint()
-
-        return
+        assert (
+            user_create_response_dict == user_get_response_dict
+        ), "Inconsistency between create and get models"

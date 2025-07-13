@@ -4,11 +4,13 @@ from pymongo.server_api import ServerApi
 
 import os
 
+
 class Car:
 
     def __init__(self, brand, style):
         self.brand = brand
         self.style = style
+
 
 if __name__ == "__main__":
 

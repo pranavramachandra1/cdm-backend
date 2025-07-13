@@ -12,10 +12,12 @@ router = APIRouter(
     tags=["users"],
 )
 
+
 def handle_exceptions(func):
     """
     Wrapper for exception hanlding
     """
+
     @wraps(func)
     async def wrapper(*args, **kwargs):
         try:
@@ -28,33 +30,48 @@ def handle_exceptions(func):
             raise HTTPException(status_code=401, detail="Invalid username or password")
         except NoFieldsToUpdateError as e:
             raise HTTPException(status_code=400, detail="No fields to update")
-        
+
     return wrapper
 
 
 # CRUD operations for users
 
+
 @router.post("/", response_model=UserResponse)
 @handle_exceptions
-async def create_user(user_data: UserCreate, user_service: UserService = Depends(get_user_service)):
+async def create_user(
+    user_data: UserCreate, user_service: UserService = Depends(get_user_service)
+):
     return user_service.create_user(user_data)
+
 
 @router.get("/{user_id}", response_model=UserResponse)
 @handle_exceptions
 async def get_user(user_id: str, user_service: UserService = Depends(get_user_service)):
     return user_service.get_user(user_id)
 
+
 @router.put("/{user_id}", response_model=UserResponse)
 @handle_exceptions
-async def update_user(user_id: str, user_data: UserUpdate, user_service: UserService = Depends(get_user_service)):
+async def update_user(
+    user_id: str,
+    user_data: UserUpdate,
+    user_service: UserService = Depends(get_user_service),
+):
     return user_service.update_user(user_id, user_data)
+
 
 @router.delete("/{user_id}")
 @handle_exceptions
-async def delete_user(user_id: str, user_service: UserService = Depends(get_user_service)):
+async def delete_user(
+    user_id: str, user_service: UserService = Depends(get_user_service)
+):
     return user_service.delete_user(user_id)
+
 
 @router.post("/auth/{user_id}")
 @handle_exceptions
-async def authenticate_user(user_id: str, user_service: UserService = Depends(get_user_service)):
-    return user_service.authenticate_user() 
+async def authenticate_user(
+    user_id: str, user_service: UserService = Depends(get_user_service)
+):
+    return user_service.authenticate_user()

@@ -36,38 +36,34 @@ def handle_exceptions(func):
 user_service = UserService()
 
 
-@router.post("/auth/google")
+@router.post("/google")
 @handle_exceptions
 async def google_auth(google_token: str):
-    try:
-        # Verify the Google token
-        idinfo = id_token.verify_oauth2_token(
-            google_token, requests.Request(), os.getenv("GOOGLE_CLIENT_ID")
-        )
+    # Verify the Google token
+    idinfo = id_token.verify_oauth2_token(
+        google_token, requests.Request(), os.getenv("GOOGLE_CLIENT_ID")
+    )
 
-        # Extract user info from verified token
-        google_id = idinfo["sub"]
-        username = idinfo["username"]
-        email = idinfo["email"]
-        phone_number = idinfo["phone_number"]
-        user_id = idinfo["user_id"]
+    # Extract user info from verified token
+    google_id = idinfo["sub"]
+    username = idinfo["username"]
+    email = idinfo["email"]
+    phone_number = idinfo["phone_number"]
+    user_id = idinfo["user_id"]
 
-        # Authenticate user interally
-        user_service.google_authenticate_user(
-            username=username,
-            email=email,
-            phone_number=phone_number,
-            user_id=user_id,
-            google_id=google_id,
-        )
+    # Authenticate user interally
+    user_service.google_authenticate_user(
+        username=username,
+        email=email,
+        phone_number=phone_number,
+        user_id=user_id,
+        google_id=google_id,
+    )
 
-        # Create your own JWT token
-        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_access_token(
-            data={"sub": email}, expires_delta=access_token_expires
-        )
+    # Create your own JWT token
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": email}, expires_delta=access_token_expires
+    )
 
-        return {"access_token": access_token, "token_type": "bearer"}
-
-    except ValueError:
-        raise HTTPException(status_code=401, detail="Invalid Google token")
+    return {"access_token": access_token, "token_type": "bearer"}
