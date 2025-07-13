@@ -5,6 +5,8 @@ from typing import Optional
 from passlib.context import CryptContext
 from pydantic import BaseModel, field_validator, ValidationInfo, ValidationError
 
+from pymongo import collection as PyMongoCollection
+
 # Keep your existing Pydantic models
 class UserCreate(BaseModel):
     username: str
@@ -64,7 +66,7 @@ class UserService:
     3. Custom exceptions instead of HTTPException
     """
     
-    def __init__(self, user_collection=None):
+    def __init__(self, user_collection:PyMongoCollection = None):
         # Dependency injection - can pass in mock for testing
         self.user_collection = user_collection
 
@@ -163,7 +165,7 @@ class UserService:
             raise NoFieldsToUpdateError("No fields to update")
         
         # Add timestamp
-        update_data["last_updated_at"] = datetime.now()
+        update_data["last_updated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         # Update in database
         self.user_collection.update_one(
