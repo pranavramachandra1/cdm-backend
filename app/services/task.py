@@ -79,12 +79,12 @@ class TaskService:
         # Create user service:
         self.user_service = (
             UserService(user_collection=user_collection)
-            if user_collection
+            if user_collection is not None
             else UserService()
         )
 
         # Create list service
-        if user_collection and list_collection:
+        if user_collection is not None and list_collection is not None:
             self.list_service = ListService(
                 list_collection=list_collection, user_collection=user_collection
             )
@@ -99,13 +99,12 @@ class TaskService:
         """
         Creates a task for a given user and list
         """
-
         # check if user exists:
-        if not self.user_service.user_exists(task_data.user_id):
+        if not self.user_service.user_exists(user_id =task_data.user_id):
             raise UserNotFoundError("User does not exist")
 
         # check if list exists:
-        if not self.list_service.list_exists(task_data.list_id):
+        if not self.list_service.list_exists(list_id = task_data.list_id):
             raise ListNotFoundError("List does not exist")
 
         # create Task document:
@@ -120,8 +119,8 @@ class TaskService:
             "isComplete": False,
             "isPriority": task_data.isPriority,
             "isRecurring": task_data.isRecurring,
-            "createdAt": datetime.now(),
-            "updatedAt": datetime.now(),
+            "createdAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "updatedAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "list_version": task_data.list_version,
         }
 
@@ -161,7 +160,7 @@ class TaskService:
             raise NoFieldsToUpdateError("No fields to update")
 
         # Add timestampe:
-        update_data["updatedAt"] = datetime.now()
+        update_data["updatedAt"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # update in DB:
         self.task_collection.update_one({"user_id": user_id}, {"$set": update_data})
@@ -230,16 +229,15 @@ class TaskService:
         Retrieves all tasks from a given list_id
         """
 
-        # Check if list exists:
-        if not self.list_service.list_exists(list_id):
-            raise ListNotFoundError("List does not exist")
-
         # Get the list:
         list_response = self.list_service.get_list(list_id)
 
+        if list_response is None:
+            raise ListNotFoundError("List does not exist")
+        
         tasks = list(
             self.task_collection.find(
-                {"list_id": list_id, "list_version": list_response["version"]}
+                {"list_id": list_id, "list_version": list_response.version}
             )
         )
 
@@ -261,7 +259,7 @@ class TaskService:
         list_response = self.list_service.get_list(list_id)
 
         # Check if requested version is valid:
-        if list_version < 0 or list_version > list_response["version"]:
+        if list_version < 0 or list_version > list_response.version:
             raise InvalidVersionRequest("Requested version is not valid")
 
         tasks = list(
@@ -283,7 +281,7 @@ class TaskService:
 
         # Update the list with the new version:
         new_list = self.list_service.increment_version(list_id)
-        new_list_version = new_list["version"]
+        new_list_version = new_list.version
 
         for task in tasks:
 
@@ -302,7 +300,7 @@ class TaskService:
 
         # Update the list with the new version:
         new_list = self.list_service.increment_version(list_id)
-        new_list_version = new_list["version"]
+        new_list_version = new_list.version
 
         for task in tasks:
             #
@@ -326,10 +324,10 @@ class TaskService:
         """
 
         list_response = self.list_service.get_list(list_id)
-        list_version = list_response["version"]
+        list_version = list_response.version
 
         # Check if list version is queryable
-        if list_version < 0 or list_version > list_response["version"]:
+        if list_version < 0 or list_version > list_response.version:
             raise InvalidVersionRequest("Requested version(s) are invalid")
 
         # Gather all responses from DB

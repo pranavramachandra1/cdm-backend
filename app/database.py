@@ -28,22 +28,17 @@ def get_test_user_service():
     user_collection = get_test_collection("user-collection")
     return UserService(user_collection)
 
-def get_test_list_service():
-    """
-    Creates a temporary list service collection for testing
-    """
-    list_collection = get_test_collection("list-collection")
-    user_collection = get_test_collection("user-collection")
-    return ListService(list_collection=list_collection, user_collection=user_collection)
+def get_services():
+    """Creates a temporary user, list, and task collection for testing"""
+    user_collection = get_test_collection("user_collection")
+    list_collection = get_test_collection("list_collection")
+    task_collection = get_test_collection("task_collection")
 
-def get_test_task_service():
-    """
-    Creates a temporary task service collection for testing
-    """
-    list_collection = get_test_collection("list-collection")
-    user_collection = get_test_collection("user-collection")
-    task_collection = get_test_collection("task-collection")
-    return TaskService(task_collection=task_collection, user_collection=user_collection, list_collection=list_collection)
+    return {
+        "user_service": UserService(user_collection=user_collection),
+        "list_service": ListService(user_collection= user_collection, list_collection=list_collection),
+        "task_service": TaskService(user_collection=user_collection, list_collection=list_collection, task_collection=task_collection)
+    }
 
 def cleanup_test_dbs():
     """

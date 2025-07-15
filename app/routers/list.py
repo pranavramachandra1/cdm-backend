@@ -64,10 +64,7 @@ def handle_list_exceptions(func):
                 detail="An unexpected error occurred"
             )
     
-    return wrapper  # ✅ Added missing return statement
-
-# Initialize service
-# list_service = ListService()
+    return wrapper
 
 # ========================================
 # CRUD OPERATIONS

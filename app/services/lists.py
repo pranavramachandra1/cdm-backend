@@ -48,7 +48,7 @@ class InvalidParameters(Exception):
 class ListService:
     def __init__(self, list_collection = None, user_collection = None):
         self.list_collection = list_collection
-        self.user_service = UserService(user_collection=user_collection) if user_collection else UserService()
+        self.user_service = UserService(user_collection=user_collection) if user_collection is not None else UserService()
 
     @staticmethod
     def create_list_id() -> str:
@@ -58,7 +58,6 @@ class ListService:
         """
         Checks if a list already exists with the same name for a given user
         """
-
         # first check if list_id is passed through
         if list_id:
             query_conditions = {
@@ -93,8 +92,8 @@ class ListService:
             "list_id": list_id,
             "user_id": list_data.user_id,
             "list_name": list_data.list_name,
-            "created_at": datetime.now(),
-            "last_updated_at": datetime.now(),
+            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "last_updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "version": 0
         }
 
@@ -118,7 +117,7 @@ class ListService:
         if not update_data:
             raise NoFieldsToUpdateError("No fields to update")
         
-        update_data['last_updated_at'] = datetime.now()
+        update_data['last_updated_at'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # update in DB:
         self.list_collection.update_one(
