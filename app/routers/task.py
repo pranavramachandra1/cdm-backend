@@ -9,7 +9,8 @@ from app.services.task import (
     TaskUpdate,
     FailedToDeleteTaskError,
     TaskNotFoundError,
-    InvalidVersionRequest
+    InvalidVersionRequest,
+    ToggleIncompleteError
 )
 from app.dependencies import get_task_service
 
@@ -48,6 +49,13 @@ def handle_task_exceptions(func):
                 status_code=status.HTTP_400_BAD_REQUEST,  # 400, not 401
                 detail="Invalid version requested"
             )
+        
+        except ToggleIncompleteError as e:
+            logger.warning(f"Toggle was unsuccessful in {func.__name__}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,  # 400, not 401
+                detail="Unable to toggle complete on task"
+            )
             
         except Exception as e:
             logger.error(f"Unexpected error in {func.__name__}: {str(e)}")
@@ -55,6 +63,7 @@ def handle_task_exceptions(func):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An unexpected error occurred"
             )
+        
     
     return wrapper
 
@@ -97,6 +106,18 @@ async def delete_task(task_id: str, task_service: TaskService = Depends(get_task
 async def toggle_completion(task_id: str, task_service: TaskService = Depends(get_task_service)):
     """Toggle task completion status"""
     return task_service.toggle_completion(task_id)
+
+@router.patch("/toggle-recurring/{task_id}", response_model=TaskResponse)
+@handle_task_exceptions
+async def toggle_recurring(task_id: str, task_service: TaskService = Depends(get_task_service)):
+    """Toggle task reccurance status"""
+    return task_service.toggle_recurring(task_id)
+
+@router.patch("/toggle-priority/{task_id}", response_model=TaskResponse)
+@handle_task_exceptions
+async def toggle_priority(task_id: str, task_service: TaskService = Depends(get_task_service)):
+    """Toggle task priority status"""
+    return task_service.toggle_priority(task_id)
 
 # ========================================
 # LIST OPERATIONS

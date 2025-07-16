@@ -68,6 +68,8 @@ class FailedToDeleteTaskError(Exception):
 class InvalidVersionRequest(Exception):
     pass
 
+class ToggleIncompleteError(Exception):
+    pass
 
 class TaskService:
 
@@ -144,9 +146,8 @@ class TaskService:
         """
         Updates task with only relevant fields
         """
-
         # check if user exists:
-        if not self.user_service.user_exists(user_id):
+        if not self.user_service.user_exists(user_id = user_id):
             raise UserNotFoundError("User does not exist")
 
         # check if task exists:
@@ -195,7 +196,7 @@ class TaskService:
             user_id=task_response.user_id,
             list_id=task_response.list_id,
             task_name=task_response.task_name,
-            reminders=task_response.reminders,
+            reminders=[],
             isPriority=task_response.isPriority,
             isRecurring=task_response.isRecurring,
             list_version=new_list_version,
@@ -213,16 +214,62 @@ class TaskService:
         task = self.get_task(task_id)
 
         # Toggle activity
-        task["isComplete"] = not task["isComplete"]
-        toggled_task = TaskUpdate(**task)
+        task.isComplete = not task.isComplete
+        toggled_task =  TaskUpdate(**task.model_dump())
 
         # Update Task
         try:
-            self.update_task(task["user_id"], task["task_id"], toggled_task)
+            self.update_task(user_id = task.user_id, 
+                             task_id = task.task_id, 
+                             task_data = toggled_task)
         except Exception as e:
             return {"message": "Task toggle was not successful"}
 
-        return {"message": "Task toggle was successful"}
+        return self.get_task(task_id)
+    
+    def toggle_recurring(self, task_id: str) -> dict:
+        """
+        Updates the completion status of a task
+        """
+
+        # Get task
+        task = self.get_task(task_id)
+
+        # Toggle activity
+        task.isRecurring = not task.isRecurring
+        toggled_task = TaskUpdate(**task.model_dump())
+
+        # Update Task
+        try:
+            self.update_task(user_id = task.user_id, 
+                             task_id = task.task_id, 
+                             task_data = toggled_task)
+        except Exception as e:
+            return {"message": "Task toggle was not successful"}
+
+        return self.get_task(task_id)
+    
+    def toggle_priority(self, task_id: str) -> dict:
+        """
+        Updates the completion status of a task
+        """
+
+        # Get task
+        task = self.get_task(task_id)
+
+        # Toggle activity
+        task.isPriority = not task.isPriority
+        toggled_task =  TaskUpdate(**task.model_dump())
+
+        # Update Task
+        try:
+            self.update_task(user_id = task.user_id, 
+                             task_id = task.task_id, 
+                             task_data = toggled_task)
+        except Exception as e:
+            return {"message": "Task toggle was not successful"}
+
+        return self.get_task(task_id)
 
     def get_current_tasks_from_list(self, list_id: str) -> List[TaskResponse]:
         """
@@ -303,9 +350,8 @@ class TaskService:
         new_list_version = new_list.version
 
         for task in tasks:
-            #
+            # Duplicate task if task is recurring
             if task.isRecurring or not task.isComplete:
-                #
                 self._duplicate_task(task.task_id, new_list_version)
 
         # Return new list:

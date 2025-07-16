@@ -3,7 +3,7 @@ from datetime import datetime
 
 from app.database import cleanup_test_dbs, get_services
 
-from app.services.task import TaskService, TaskCreate
+from app.services.task import TaskService, TaskCreate, TaskResponse
 from app.services.lists import ListService, ListCreate
 from app.services.users import UserService, UserCreate
 
@@ -95,4 +95,138 @@ class TestListOperations:
         assert updated_list_response.version == 1, "List version was not updated correctly"
         assert not cleared_task_data_response, "List was not cleared correctly"
         
+        return
+
+    def test_toggle_complete_rollover(self, services,
+                                   user_create_data: UserCreate):
+
+        # Create user
+        user_service: UserService = services['user_service']
+        list_service: ListService = services['list_service']
+        task_service: TaskService = services['task_service']
+
+        user_response = user_service.create_user(user_data = user_create_data)
+
+        # Create list
+        list_data = ListCreate(
+            user_id = user_response.user_id,
+            list_name = "test list"
+        )
+        list_response = list_service.create_list(
+            list_data=list_data
+        )
+
+        # Create and add tasks to list:
+        task1 = TaskCreate(
+            user_id = user_response.user_id,
+            list_id = list_response.list_id,
+            task_name = "test task 1",
+            reminders = [],
+            isPriority=False,
+            isRecurring=False,
+            list_version=list_response.version
+        )
+
+        task2 = TaskCreate(
+            user_id = user_response.user_id,
+            list_id = list_response.list_id,
+            task_name = "test task 2",
+            reminders = [],
+            isPriority=False,
+            isRecurring=False,
+            list_version=list_response.version
+        )
+
+        task3 = TaskCreate(
+            user_id = user_response.user_id,
+            list_id = list_response.list_id,
+            task_name = "test task 3",
+            reminders = [],
+            isPriority=False,
+            isRecurring=False,
+            list_version=list_response.version
+        )
+
+        task_response1 = task_service.create_task(task_data = task1)
+        task_response2 = task_service.create_task(task_data = task2)
+        task_response3 = task_service.create_task(task_data = task3)
+
+        # Mark task 1 as complete
+        task_response_1_complete: TaskResponse = task_service.toggle_completion(task_id=task_response1.task_id)
+        assert task_response_1_complete.isComplete, "Task was not correctly marked as complete"
+        
+        # Rollover list:
+        rollover_response = task_service.rollover_list(list_id = list_response.list_id)
+
+        # sort the tasks by name
+        task_data_response_dicts = sorted([tdr.model_dump() for tdr in rollover_response], key = lambda x: x['task_name'])
+
+        # Assert that the only tasks in the list are task2 and task3:
+        assert len(task_data_response_dicts) == 2, "Tasks were not rolled over correctly"
+        
+        # Compare task values:
+        assert task_response2.task_name == task_data_response_dicts[0]['task_name'], "Task 2 was not updated properly"
+        assert task_response3.task_name == task_data_response_dicts[1]['task_name'], "Task 3 was not updated properly"
+
+    def test_recurring_tasks(self, services,
+                                   user_create_data: UserCreate):
+
+        # Create user
+        user_service: UserService = services['user_service']
+        list_service: ListService = services['list_service']
+        task_service: TaskService = services['task_service']
+
+        user_response = user_service.create_user(user_data = user_create_data)
+
+        # Create list
+        list_data = ListCreate(
+            user_id = user_response.user_id,
+            list_name = "test list"
+        )
+        list_response = list_service.create_list(
+            list_data=list_data
+        )
+
+        # Create and add tasks to list:
+        task1 = TaskCreate(
+            user_id = user_response.user_id,
+            list_id = list_response.list_id,
+            task_name = "test task 1",
+            reminders = [],
+            isPriority=False,
+            isRecurring=True,
+            list_version=list_response.version
+        )
+
+        task_response1 = task_service.create_task(task_data = task1)
+
+        # Clear list and see if tasks persists:
+        task_clear_response = task_service.clear_list(list_id = list_response.list_id)
+        assert task_response1.task_name == task_clear_response[0].task_name, "Task was not cleared properly"
+
+        # Complete task and task should persist regardless
+        task_service.toggle_completion(task_id = task_response1.task_id)
+        task_rollover_response = task_service.clear_list(list_id = list_response.list_id)
+        assert task_response1.task_name == task_rollover_response[0].task_name, "Task was not rolled over properly"
+        
+        # Ensure that list was properly updated:
+        second_list_response = list_service.get_list(list_id = list_response.list_id)
+        assert second_list_response.version == 1, "List was not versioned properly"
+
+        # Toggle recurring on task:
+        new_task = task_rollover_response[0]
+        nonrecurring_task_response: TaskResponse = task_service.toggle_recurring(task_id=new_task.task_id)
+        
+        # check if recurring status has changed:
+        assert nonrecurring_task_response.isRecurring == False, "Task recurrence status was not updated properly"
+
+        # Clear list and observe that task has cleared:
+        task_service.clear_list(list_id = list_response.list_id)
+
+        assert len(task_service.get_current_tasks_from_list(list_id = list_response.list_id)) == 0, "list was not cleared properly"
+
+        # Check if list versionw as updated again
+        third_list_response = list_service.get_list(list_id = list_response.list_id)
+        assert third_list_response.version == 2, "List was not versioned properly"
+
         return
