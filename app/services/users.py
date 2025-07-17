@@ -96,6 +96,8 @@ class UserService:
             query_conditions.append({"phone_number": phone_number})
         if user_id:
             query_conditions.append({"user_id": user_id})
+        if google_id:
+            query_conditions.append({"google_id": google_id})
         
         if not query_conditions:
             return False

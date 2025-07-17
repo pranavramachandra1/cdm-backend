@@ -164,7 +164,7 @@ class TaskService:
         update_data["updatedAt"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # update in DB:
-        self.task_collection.update_one({"user_id": user_id}, {"$set": update_data})
+        self.task_collection.update_one({"task_id": task_id}, {"$set": update_data})
 
         return self.get_task(task_id)
 
@@ -299,7 +299,7 @@ class TaskService:
         """
 
         # Check if list exists:
-        if not self.list_service.list_exists(list_id):
+        if not self.list_service.list_exists(list_id=list_id):
             raise ListNotFoundError("List does not exist")
 
         # Get List:
@@ -311,7 +311,7 @@ class TaskService:
 
         tasks = list(
             self.task_collection.find(
-                {"list_id": list_id}, {"list_version": list_version}
+                {"list_id": list_id, "list_version": list_version}
             )
         )
 
