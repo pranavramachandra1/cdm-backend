@@ -10,7 +10,8 @@ from app.services.task import (
     FailedToDeleteTaskError,
     TaskNotFoundError,
     InvalidVersionRequest,
-    ToggleIncompleteError
+    ToggleIncompleteError,
+    NoTasksToRemove
 )
 from app.dependencies import get_task_service
 
@@ -52,6 +53,13 @@ def handle_task_exceptions(func):
         
         except ToggleIncompleteError as e:
             logger.warning(f"Toggle was unsuccessful in {func.__name__}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,  # 400, not 401
+                detail="Unable to toggle complete on task"
+            )
+        
+        except NoTasksToRemove as e:
+            logger.warning(f"No tasks to removed during {func.__name__}: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,  # 400, not 401
                 detail="Unable to toggle complete on task"
