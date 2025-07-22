@@ -152,6 +152,21 @@ class UserService:
         # Remove password from response
         user_data = {k: v for k, v in user.items() if k != 'password'}
         return UserResponse(**user_data)
+    
+    def get_user_with_google_id(self, google_id: str) -> UserResponse:
+        """
+        Retrieves user by a google_id
+        """
+
+        user = self.user_collection.find_one({"google_id": google_id})
+        
+        if not user:
+            raise UserNotFoundError("User not found")
+        
+        # Remove password from response
+        user_data = {k: v for k, v in user.items() if k != 'password'}
+        return UserResponse(**user_data)
+
 
     def update_user(self, user_id: str, user_data: UserUpdate) -> UserResponse:
         """
