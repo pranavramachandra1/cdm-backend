@@ -10,6 +10,7 @@ from app.services.lists import (
     NoFieldsToUpdateError,
 )
 from typing import List
+from functools import wraps
 import logging
 
 from app.dependencies import get_list_service
@@ -23,7 +24,8 @@ def handle_list_exceptions(func):
     """
     Decorator for handling list service exceptions
     """
-
+    
+    @wraps(func)
     async def wrapper(*args, **kwargs):
         try:
             return await func(*args, **kwargs)
@@ -83,7 +85,7 @@ async def create_list(
 @handle_list_exceptions
 async def get_list(list_id: str, list_service: ListService = Depends(get_list_service)):
     """Get a list by ID"""
-    return list_service.get_list(list_id=list_id)  # ✅ Kept your parameter style
+    return list_service.get_list(list_id=list_id)
 
 
 @router.put("/{list_id}", response_model=ListResponse)
@@ -104,7 +106,6 @@ async def delete_list(
 ):
     """Delete a list by ID"""
     result = list_service.delete_list(list_id)
-    # ✅ Changed: DELETE typically returns success message, not the deleted object
     return {"message": "List deleted successfully", "list_id": list_id}
 
 
@@ -122,52 +123,3 @@ async def get_lists_by_user(
 ):
     """Get all lists belonging to a user"""
     return list_service.get_lists_by_user(user_id)
-
-
-# ========================================
-# LIST VERSION OPERATIONS
-# ========================================
-
-
-@router.patch(
-    "/{list_id}/increment-version", response_model=ListResponse
-)  # ✅ Better URL structure
-@handle_list_exceptions
-async def increment_list_version(
-    list_id: str, list_service: ListService = Depends(get_list_service)
-):
-    """Increment the version of a list"""
-    return list_service.increment_version(list_id)
-
-
-# ========================================
-# ADDITIONAL USEFUL ENDPOINTS
-# ========================================
-
-
-@router.get("/", response_model=List[ListResponse])
-@handle_list_exceptions
-async def get_all_lists(
-    skip: int = 0,
-    limit: int = 100,
-    user_id: str = None,
-    list_service: ListService = Depends(get_list_service),  # Optional filter by user
-):
-    """
-    Get all lists with optional pagination and filtering
-    """
-    if user_id:
-        return list_service.get_lists_by_user(user_id)
-    else:
-        return list_service.get_all_lists(skip=skip, limit=limit)
-
-
-@router.get("/{list_id}/stats")
-@handle_list_exceptions
-async def get_list_statistics(
-    list_id: str, list_service: ListService = Depends(get_list_service)
-):
-    """
-    Get statistics for a list (total tasks, completed tasks, etc.)
-    """
-    return list_service.get_list_statistics(list_id)

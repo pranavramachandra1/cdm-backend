@@ -1,12 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import users
+from .routers import users, lists, tasks
 
 app = FastAPI()
 
-# Include the users router
 app.include_router(users.router)
+app.include_router(lists.router)
+app.include_router(tasks.router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],  # Your frontend URL

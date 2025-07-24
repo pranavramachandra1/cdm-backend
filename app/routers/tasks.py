@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 import logging
+from functools import wraps
 
 from app.services.task import (
     TaskService,
@@ -25,6 +26,7 @@ def handle_task_exceptions(func):
     Decorator for handling task service exceptions
     """
 
+    @wraps(func)
     async def wrapper(*args, **kwargs):
         try:
             return await func(*args, **kwargs)

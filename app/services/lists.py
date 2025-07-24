@@ -166,7 +166,6 @@ class ListService:
         """
         Get's all the list_ids from a single user_id
         """
-
         # check if user exists:
         if not self.user_service.user_exists(user_id=user_id):
             raise UserNotFoundError("User not found")
