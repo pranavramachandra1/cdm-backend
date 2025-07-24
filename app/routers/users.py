@@ -92,8 +92,7 @@ async def authenticate_user(
 ):
     return user_service.authenticate_user()
 
-
-@router.get("/google-id/{user_id}", response_model=UserResponse)
+@router.get("/google-id/{google_id}", response_model=UserResponse)
 @handle_exceptions
-async def get_user(user_id: str, user_service: UserService = Depends(get_user_service)):
-    return user_service.get_user(user_id)
+async def get_user_with_google_id(google_id: str, user_service: UserService = Depends(get_user_service)):
+    return user_service.get_user_with_google_id(google_id)

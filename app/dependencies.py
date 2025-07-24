@@ -3,6 +3,7 @@ from pymongo.collection import Collection
 from functools import lru_cache
 import os
 from pymongo.server_api import ServerApi
+from dotenv import load_dotenv
 
 from app.services.users import UserService
 from app.services.lists import ListService
@@ -11,6 +12,7 @@ from app.services.task import TaskService
 TEST_ENV = "TEST"
 
 client = MongoClient()
+load_dotenv()
 
 
 @lru_cache
@@ -26,6 +28,8 @@ def get_mongo_db():
         server_api=ServerApi("1"),
     )
 
+    breakpoint()
+
     # Return DB
     return mongo_url.todov2
 
@@ -40,6 +44,8 @@ def get_user_service() -> UserService:
     user_collection = (
         db["test-users"] if os.getenv("ENV") == TEST_ENV else db["prod-users"]
     )
+
+    breakpoint()
 
     return UserService(user_collection=user_collection)
 
@@ -82,3 +88,7 @@ def get_task_service() -> TaskService:
         list_collection=list_collection,
         task_collection=task_collection,
     )
+
+if __name__ == "__main__":
+
+    breakpoint()
