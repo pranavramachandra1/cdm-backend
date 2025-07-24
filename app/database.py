@@ -12,6 +12,7 @@ from app.services.task import TaskService
 
 from app.dependencies import TEST_ENV, get_mongo_db
 
+
 def get_test_collection(name):
     """
     Creates a test collection
@@ -21,12 +22,14 @@ def get_test_collection(name):
         name=f"test-{name}-{datetime.now().isoformat()}-{random.randint(0, 999999):06d}"
     )
 
+
 def get_test_user_service():
     """
     Creates a temporary user service collection for testing
     """
     user_collection = get_test_collection("user-collection")
     return UserService(user_collection)
+
 
 def get_services():
     """Creates a temporary user, list, and task collection for testing"""
@@ -36,9 +39,16 @@ def get_services():
 
     return {
         "user_service": UserService(user_collection=user_collection),
-        "list_service": ListService(user_collection= user_collection, list_collection=list_collection),
-        "task_service": TaskService(user_collection=user_collection, list_collection=list_collection, task_collection=task_collection)
+        "list_service": ListService(
+            user_collection=user_collection, list_collection=list_collection
+        ),
+        "task_service": TaskService(
+            user_collection=user_collection,
+            list_collection=list_collection,
+            task_collection=task_collection,
+        ),
     }
+
 
 def cleanup_test_dbs():
     """
@@ -51,5 +61,5 @@ def cleanup_test_dbs():
     db = get_mongo_db()
 
     for collection in db.list_collections():
-        if 'test-' in collection['name']:
-            db.drop_collection(collection['name'])
+        if "test-" in collection["name"]:
+            db.drop_collection(collection["name"])

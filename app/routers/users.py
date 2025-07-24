@@ -47,18 +47,18 @@ async def create_user(
 
 @router.post("/create-test-user", response_model=UserResponse)
 @handle_exceptions
-async def create_user(
-    user_service: UserService = Depends(get_user_service)
-):
-    return user_service.create_user(UserCreate(
-        username="johndoe123",
-        email="johndoe123@gmail.com",
-        password="lmao123",
-        phone_number="8477320621",
-        first_name="John",
-        last_name="Doe",
-        google_id="bruhski123",
-    ))
+async def create_user(user_service: UserService = Depends(get_user_service)):
+    return user_service.create_user(
+        UserCreate(
+            username="johndoe123",
+            email="johndoe123@gmail.com",
+            password="lmao123",
+            phone_number="8477320621",
+            first_name="John",
+            last_name="Doe",
+            google_id="bruhski123",
+        )
+    )
 
 
 @router.get("/{user_id}", response_model=UserResponse)
@@ -92,7 +92,10 @@ async def authenticate_user(
 ):
     return user_service.authenticate_user()
 
+
 @router.get("/google-id/{google_id}", response_model=UserResponse)
 @handle_exceptions
-async def get_user_with_google_id(google_id: str, user_service: UserService = Depends(get_user_service)):
+async def get_user_with_google_id(
+    google_id: str, user_service: UserService = Depends(get_user_service)
+):
     return user_service.get_user_with_google_id(google_id)
