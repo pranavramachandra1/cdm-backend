@@ -284,7 +284,6 @@ class TaskService:
 
         # Get the list:
         list_response = self.list_service.get_list(list_id)
-
         if list_response is None:
             raise ListNotFoundError("List does not exist")
 

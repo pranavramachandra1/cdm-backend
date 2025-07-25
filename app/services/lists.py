@@ -101,7 +101,7 @@ class ListService:
             "list_name": list_data.list_name,
             "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "last_updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "version": 0,
+            "version": 1,
         }
 
         self.list_collection.insert_one(list_doc)
