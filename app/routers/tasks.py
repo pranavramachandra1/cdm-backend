@@ -106,7 +106,7 @@ async def update_task(
     task_service: TaskService = Depends(get_task_service),
 ):
     """Update a task by ID"""
-    return task_service.update_task(task_id, task_data)
+    return task_service.update_task(task_id = task_id, task_data = task_data)
 
 
 @router.delete("/{task_id}", status_code=status.HTTP_200_OK)

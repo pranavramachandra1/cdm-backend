@@ -148,14 +148,10 @@ class TaskService:
 
         return TaskResponse(**response)
 
-    def update_task(self, user_id: str, task_id: str, task_data: TaskUpdate):
+    def update_task(self, task_id: str, task_data: TaskUpdate):
         """
         Updates task with only relevant fields
         """
-        # check if user exists:
-        if not self.user_service.user_exists(user_id=user_id):
-            raise UserNotFoundError("User does not exist")
-
         # check if task exists:
         if not self.task_collection.find_one({"task_id": task_id}):
             raise TaskNotFoundError("Task does not exist")
@@ -170,7 +166,7 @@ class TaskService:
         update_data["updatedAt"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # update in DB:
-        self.task_collection.update_one({"user_id": user_id}, {"$set": update_data})
+        self.task_collection.update_one({"task_id": task_id}, {"$set": update_data})
 
         return self.get_task(task_id)
 

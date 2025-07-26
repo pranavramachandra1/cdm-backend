@@ -10,7 +10,7 @@ app.include_router(lists.router)
 app.include_router(tasks.router)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Your frontend URL
+    allow_origins=["http://localhost:3000", "http://localhost:3001", "http://localhost"],  # Your frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
