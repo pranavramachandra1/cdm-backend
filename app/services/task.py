@@ -292,11 +292,18 @@ class TaskService:
         # convert output to all TasksResponse models and return
         return [TaskResponse(**t) for t in tasks]
 
-    def _get_tasks_from_list_version(
-        self, list_id: str, list_version: int
+    def get_tasks_from_list_version(
+        self, list_id: str, list_request_version: int
     ) -> List[TaskResponse]:
         """
         Retrieves all tasks from a specified version of a task
+
+        Args:
+            list_id: str = list_id for specified list
+            list_request_version: int = requested version number of list
+
+        Returns:
+            tasks: List[TaskResponse] = list of all tasks for a given list_id and list_request_version
         """
 
         # Check if list exists:
@@ -307,12 +314,12 @@ class TaskService:
         list_response = self.list_service.get_list(list_id)
 
         # Check if requested version is valid:
-        if list_version < 0 or list_version > list_response.version:
+        if list_request_version < 0 or list_request_version > list_response.version:
             raise InvalidVersionRequest("Requested version is not valid")
 
         tasks = list(
             self.task_collection.find(
-                {"list_id": list_id}, {"list_version": list_version}
+                {"list_id": list_id}, {"list_version": list_request_version}
             )
         )
 
@@ -388,6 +395,6 @@ class TaskService:
         # Gather all responses from DB
         response = []
         for page in range(page_start, page_end):
-            response.append(self._get_tasks_from_list_version(list_id, page))
+            response.append(self.get_tasks_from_list_version(list_id, page))
 
         return response

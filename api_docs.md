@@ -344,8 +344,9 @@ This document provides comprehensive API documentation for the FastAPI-based tod
 
 **Status Codes:**
 - 200: Completion status toggled successfully
-- 400: Unable to toggle completion
+- 400: Unable to toggle complete on task
 - 404: Task not found
+- 500: An unexpected error occurred
 
 ### PATCH `/tasks/toggle-recurring/{task_id}`
 **Purpose:** Toggles the recurring status of a task.
@@ -357,8 +358,9 @@ This document provides comprehensive API documentation for the FastAPI-based tod
 
 **Status Codes:**
 - 200: Recurring status toggled successfully
-- 400: Unable to toggle recurring status
+- 400: Unable to toggle complete on task
 - 404: Task not found
+- 500: An unexpected error occurred
 
 ### PATCH `/tasks/toggle-priority/{task_id}`
 **Purpose:** Toggles the priority status of a task.
@@ -370,8 +372,9 @@ This document provides comprehensive API documentation for the FastAPI-based tod
 
 **Status Codes:**
 - 200: Priority status toggled successfully
-- 400: Unable to toggle priority
+- 400: Unable to toggle complete on task
 - 404: Task not found
+- 500: An unexpected error occurred
 
 ### PATCH `/tasks/clear-list/{list_id}`
 **Purpose:** Removes all tasks from a specific list.
@@ -383,7 +386,7 @@ This document provides comprehensive API documentation for the FastAPI-based tod
 
 **Status Codes:**
 - 200: List cleared successfully
-- 400: No tasks to remove
+- 400: Unable to toggle complete on task (NoTasksToRemove error)
 - 404: List not found
 
 ### POST `/tasks/rollover-list/{list_id}`
@@ -395,9 +398,10 @@ This document provides comprehensive API documentation for the FastAPI-based tod
 **Returns:** Array of `TaskResponse` objects (rolled over tasks)
 
 **Status Codes:**
-- 201: List rolled over successfully
-- 400: Invalid version request
-- 404: List not found
+- 200: List rolled over successfully
+- 400: Invalid version requested
+- 404: Task not found
+- 500: An unexpected error occurred
 
 ### GET `/tasks/list/{list_id}/current`
 **Purpose:** Retrieves all current tasks from a specific list.
@@ -411,13 +415,12 @@ This document provides comprehensive API documentation for the FastAPI-based tod
 - 200: Success
 - 404: List not found
 
-### GET `/tasks/list/{list_id}/versions`
-**Purpose:** Retrieves tasks from multiple versions of a list with pagination.
+### GET `/tasks/list/{list_id}/version/{list_request_version}`
+**Purpose:** Retrieves tasks from a specific version of a list.
 
 **Parameters:**
 - `list_id` (string, path): List identifier
-- `page_start` (int, query, default: 0): Starting page number
-- `page_end` (int, query, default: 10): Ending page number
+- `list_request_version` (int, path): Specific version number to retrieve
 
 **Returns:** Array of arrays of `TaskResponse` objects (grouped by version)
 

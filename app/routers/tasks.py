@@ -106,7 +106,7 @@ async def update_task(
     task_service: TaskService = Depends(get_task_service),
 ):
     """Update a task by ID"""
-    return task_service.update_task(task_id = task_id, task_data = task_data)
+    return task_service.update_task(task_id=task_id, task_data=task_data)
 
 
 @router.delete("/{task_id}", status_code=status.HTTP_200_OK)
@@ -190,14 +190,17 @@ async def get_current_tasks_from_list(
 
 
 @router.get(
-    "/list/{list_id}/versions", response_model=List[List[TaskResponse]]
+    "/list/{list_id}/version/{list_request_version}",
+    response_model=List[List[TaskResponse]],
 )  # Cleaner URL
 @handle_task_exceptions
-async def get_versions_of_list(
+async def get_tasks_from_list_version(
     list_id: str,
-    page_start: int = 0,  # Use int instead of str for pagination
-    page_end: int = 10,  # Provide default values
+    list_request_version: int,
     task_service: TaskService = Depends(get_task_service),
 ):
     """Get versions of a list with pagination"""
-    return task_service.get_versions_of_list(list_id, page_start, page_end)
+    return task_service.get_tasks_from_list_version(
+        list_id=list_id,
+        list_request_version=list_request_version,
+    )

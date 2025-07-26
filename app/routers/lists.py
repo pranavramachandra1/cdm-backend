@@ -24,7 +24,7 @@ def handle_list_exceptions(func):
     """
     Decorator for handling list service exceptions
     """
-    
+
     @wraps(func)
     async def wrapper(*args, **kwargs):
         try:
