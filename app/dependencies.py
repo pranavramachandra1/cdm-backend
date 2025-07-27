@@ -23,6 +23,7 @@ if not X_API_KEY:
 if not MONGO_PASSWORD or not MONGO_USERNAME:
     raise ValueError("MongoDB credentials must be set")
 
+
 @lru_cache
 def get_mongo_db():
     """Get MongoDB client - cached for performance"""
@@ -90,29 +91,23 @@ def get_task_service() -> TaskService:
         task_collection=task_collection,
     )
 
+
 def get_api_key(x_api_key: str = Header(None, alias="X-API-Key")):
     """Validate API key from X-API-Key header"""
     if not x_api_key:
-        raise HTTPException(
-            status_code=401,
-            detail="X-API-Key header required"
-        )
-    
+        raise HTTPException(status_code=401, detail="X-API-Key header required")
+
     if x_api_key != X_API_KEY:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid API Key"
-        )
+        raise HTTPException(status_code=401, detail="Invalid API Key")
     return x_api_key
+
 
 # Alternative using APIKeyHeader (more explicit)
 api_key_header = APIKeyHeader(name="X-API-Key")
 
+
 def get_api_key_alt(api_key: str = Depends(api_key_header)):
     """Alternative API key validation using APIKeyHeader"""
     if api_key != X_API_KEY:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid API Key"
-        )
+        raise HTTPException(status_code=401, detail="Invalid API Key")
     return api_key
