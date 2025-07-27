@@ -221,9 +221,7 @@ class TaskService:
 
         # Update Task
         try:
-            self.update_task(
-                user_id=task.user_id, task_id=task.task_id, task_data=toggled_task
-            )
+            self.update_task(task_id=task.task_id, task_data=toggled_task)
         except Exception as e:
             return {"message": "Task toggle was not successful"}
 
@@ -243,9 +241,7 @@ class TaskService:
 
         # Update Task
         try:
-            self.update_task(
-                user_id=task.user_id, task_id=task.task_id, task_data=toggled_task
-            )
+            self.update_task(task_id=task.task_id, task_data=toggled_task)
         except Exception as e:
             return {"message": "Task toggle was not successful"}
 
@@ -265,9 +261,7 @@ class TaskService:
 
         # Update Task
         try:
-            self.update_task(
-                user_id=task.user_id, task_id=task.task_id, task_data=toggled_task
-            )
+            self.update_task(task_id=task.task_id, task_data=toggled_task)
         except Exception as e:
             return {"message": "Task toggle was not successful"}
 
@@ -307,11 +301,11 @@ class TaskService:
         """
 
         # Check if list exists:
-        if not self.list_service.list_exists(list_id):
+        if not self.list_service.list_exists(list_id=list_id):
             raise ListNotFoundError("List does not exist")
 
         # Get List:
-        list_response = self.list_service.get_list(list_id)
+        list_response = self.list_service.get_list(list_id=list_id)
 
         # Check if requested version is valid:
         if list_request_version < 0 or list_request_version > list_response.version:
@@ -319,7 +313,7 @@ class TaskService:
 
         tasks = list(
             self.task_collection.find(
-                {"list_id": list_id}, {"list_version": list_request_version}
+                {"list_id": list_id, "list_version": list_request_version}
             )
         )
 

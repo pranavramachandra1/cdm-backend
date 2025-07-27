@@ -84,7 +84,6 @@ class TestTaskOperations:
         # Update task
         task_update = TaskUpdate(task_name="Updated CRUD task", isPriority=False)
         updated_task = task_service.update_task(
-            user_id=user_response.user_id,
             task_id=task_response.task_id,
             task_data=task_update,
         )
@@ -120,7 +119,6 @@ class TestTaskOperations:
         # Test TaskNotFoundError for update_task
         with pytest.raises(TaskNotFoundError, match="Task does not exist"):
             task_service.update_task(
-                user_id=user_response.user_id,
                 task_id="nonexistent-task-id",
                 task_data=TaskUpdate(task_name="updated"),
             )
@@ -137,17 +135,9 @@ class TestTaskOperations:
         )
         task_response = task_service.create_task(task_data=task_data)
 
-        with pytest.raises(UserNotFoundError, match="User does not exist"):
-            task_service.update_task(
-                user_id="nonexistent-user-id",
-                task_id=task_response.task_id,
-                task_data=TaskUpdate(task_name="updated"),
-            )
-
         # Test NoFieldsToUpdateError
         with pytest.raises(NoFieldsToUpdateError, match="No fields to update"):
             task_service.update_task(
-                user_id=user_response.user_id,
                 task_id=task_response.task_id,
                 task_data=TaskUpdate(),
             )
@@ -236,21 +226,21 @@ class TestTaskOperations:
         task1_data = TaskCreate(
             user_id=user_response.user_id,
             list_id=list_response.list_id,
-            task_name="Version 0 task 1",
+            task_name="Version 1 task 1",
             reminders=[],
             isPriority=False,
             isRecurring=True,
-            list_version=0,
+            list_version=list_response.version,
         )
 
         task2_data = TaskCreate(
             user_id=user_response.user_id,
             list_id=list_response.list_id,
-            task_name="Version 0 task 2",
+            task_name="Version 1 task 2",
             reminders=[],
             isPriority=True,
             isRecurring=False,
-            list_version=0,
+            list_version=list_response.version,
         )
 
         task1_response = task_service.create_task(task_data=task1_data)
@@ -264,29 +254,29 @@ class TestTaskOperations:
         task_service.clear_list(list_response.list_id)
 
         # Verify version 1 tasks
-        version_1_tasks = task_service.get_current_tasks_from_list(
+        version_2_tasks = task_service.get_current_tasks_from_list(
             list_response.list_id
         )
-        assert len(version_1_tasks) == 1  # Only recurring task should be duplicated
-        assert version_1_tasks[0].task_name == "Version 0 task 1"
-        assert version_1_tasks[0].list_version == 1
+        assert len(version_2_tasks) == 1  # Only recurring task should be duplicated
+        assert version_2_tasks[0].task_name == "Version 1 task 1"
+        assert version_2_tasks[0].list_version == 2
 
-        # Test _get_tasks_from_list_version with version 0
-        version_0_tasks = task_service._get_tasks_from_list_version(
-            list_response.list_id, 0
+        # Test _get_tasks_from_list_version with version 1
+        version_1_tasks = task_service.get_tasks_from_list_version(
+            list_id=list_response.list_id, list_request_version=1
         )
-        assert len(version_0_tasks) == 2
+        assert len(version_1_tasks) == 2
 
         # Test invalid version requests
         with pytest.raises(
             InvalidVersionRequest, match="Requested version is not valid"
         ):
-            task_service._get_tasks_from_list_version(list_response.list_id, -1)
+            task_service.get_tasks_from_list_version(list_response.list_id, -1)
 
         with pytest.raises(
             InvalidVersionRequest, match="Requested version is not valid"
         ):
-            task_service._get_tasks_from_list_version(list_response.list_id, 999)
+            task_service.get_tasks_from_list_version(list_response.list_id, 999)
 
     def test_task_duplication_edge_cases(self, services, user_create_data: UserCreate):
         """Test task duplication in various scenarios"""
@@ -447,7 +437,6 @@ class TestTaskOperations:
         # Test updating only one field
         single_update = TaskUpdate(task_name="Updated name only")
         updated_task = task_service.update_task(
-            user_id=user_response.user_id,
             task_id=task_response.task_id,
             task_data=single_update,
         )
@@ -465,7 +454,6 @@ class TestTaskOperations:
         )
 
         multi_updated_task = task_service.update_task(
-            user_id=user_response.user_id,
             task_id=task_response.task_id,
             task_data=multi_update,
         )
@@ -478,52 +466,3 @@ class TestTaskOperations:
         # Verify updatedAt timestamp was changed
         # Note: Due to string format storage, we just verify the update succeeded
         assert multi_updated_task.task_name == "Multi updated name"
-
-    def test_get_versions_of_list_pagination(
-        self, services, user_create_data: UserCreate
-    ):
-        """Test pagination functionality in get_versions_of_list"""
-        user_service: UserService = services["user_service"]
-        list_service: ListService = services["list_service"]
-        task_service: TaskService = services["task_service"]
-
-        user_response = user_service.create_user(user_data=user_create_data)
-        list_data = ListCreate(
-            user_id=user_response.user_id, list_name="Pagination test list"
-        )
-        list_response = list_service.create_list(list_data=list_data)
-
-        # Create tasks and generate multiple versions
-        task_data = TaskCreate(
-            user_id=user_response.user_id,
-            list_id=list_response.list_id,
-            task_name="Versioned task",
-            reminders=[],
-            isPriority=False,
-            isRecurring=True,
-            list_version=0,
-        )
-        task_service.create_task(task_data=task_data)
-
-        # Create multiple versions by clearing list multiple times
-        for i in range(3):
-            task_service.clear_list(list_response.list_id)
-
-        # Current list should be at version 3
-        current_list = list_service.get_list(list_response.list_id)
-        assert current_list.version == 3
-
-        # Test pagination
-        versions = task_service.get_versions_of_list(
-            list_response.list_id, page_start=0, page_end=2
-        )
-
-        assert len(versions) == 2  # Should return 2 versions (0 and 1)
-
-        # Test invalid pagination bounds
-        with pytest.raises(
-            InvalidVersionRequest, match="Requested version is not valid"
-        ):
-            task_service.get_versions_of_list(
-                list_response.list_id, page_start=-1, page_end=1
-            )

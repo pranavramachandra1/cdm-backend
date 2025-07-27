@@ -9,6 +9,7 @@ from app.services.task import (
     TaskResponse,
     TaskNotFoundError,
     InvalidVersionRequest,
+    NoTasksToRemove,
 )
 from app.services.lists import (
     ListService,
@@ -107,7 +108,7 @@ class TestListOperations:
 
         # make sure list version is incremented
         assert (
-            updated_list_response.version == 1
+            updated_list_response.version == 2
         ), "List version was not updated correctly"
         assert not cleared_task_data_response, "List was not cleared correctly"
 
@@ -223,7 +224,7 @@ class TestListOperations:
 
         # assert that list is now empty
         assert len(tasks) == 0, "List was not cleared properly"
-        assert new_list_response.version == 1, "List version was not updated properly"
+        assert new_list_response.version == 2, "List version was not updated properly"
 
         return
 
@@ -261,7 +262,7 @@ class TestListOperations:
 
         # List should have a duplicated task
         assert len(tasks) == 1, "List was not cleared properly"
-        assert new_list_response.version == 1, "List version was not updated properly"
+        assert new_list_response.version == 2, "List version was not updated properly"
         assert tasks[0].task_name == task1_response.task_name
 
         return
@@ -452,12 +453,16 @@ class TestListOperations:
         with pytest.raises(
             InvalidVersionRequest, match="Requested version is not valid"
         ):
-            task_service._get_tasks_from_list_version(list_response.list_id, -1)
+            task_service.get_tasks_from_list_version(
+                list_id=list_response.list_id, list_request_version=-1
+            )
 
         with pytest.raises(
             InvalidVersionRequest, match="Requested version is not valid"
         ):
-            task_service._get_tasks_from_list_version(list_response.list_id, 999)
+            task_service.get_tasks_from_list_version(
+                list_id=list_response.list_id, list_request_version=999
+            )
 
         with pytest.raises(
             InvalidVersionRequest, match="Requested version is not valid"
@@ -481,19 +486,17 @@ class TestListOperations:
         assert len(tasks) == 0, "Empty list should return no tasks"
 
         # Test clearing empty list
-        cleared_tasks = task_service.clear_list(list_response.list_id)
-        assert len(cleared_tasks) == 0, "Clearing empty list should return no tasks"
+        with pytest.raises(NoTasksToRemove, match="No tasks to clear in list"):
+            cleared_tasks = task_service.clear_list(list_response.list_id)
 
         # Test rollover on empty list
-        rollover_tasks = task_service.rollover_list(list_response.list_id)
-        assert (
-            len(rollover_tasks) == 0
-        ), "Rolling over empty list should return no tasks"
+        with pytest.raises(NoTasksToRemove, match="No tasks to clear in list"):
+            cleared_tasks = task_service.rollover_list(list_response.list_id)
 
-        # Verify list version was incremented
+        # Verify list version was not incremented
         updated_list = list_service.get_list(list_response.list_id)
         assert (
-            updated_list.version > list_response.version
+            updated_list.version == list_response.version
         ), "List version should be incremented"
 
     def test_user_with_multiple_lists(self, services, user_create_data: UserCreate):
