@@ -191,7 +191,7 @@ async def get_current_tasks_from_list(
 
 @router.get(
     "/list/{list_id}/version/{list_request_version}",
-    response_model=List[List[TaskResponse]],
+    response_model=List[TaskResponse],
 )  # Cleaner URL
 @handle_task_exceptions
 async def get_tasks_from_list_version(

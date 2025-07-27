@@ -1,3 +1,5 @@
+from fastapi import Header, HTTPException, Depends
+from fastapi.security import APIKeyHeader
 from pymongo import MongoClient
 from pymongo.collection import Collection
 from functools import lru_cache
@@ -9,22 +11,25 @@ from app.services.users import UserService
 from app.services.lists import ListService
 from app.services.task import TaskService
 
-TEST_ENV = "TEST"
-
-client = MongoClient()
 load_dotenv()
 
+TEST_ENV = "TEST"
+X_API_KEY = os.getenv("API_KEY")
+MONGO_PASSWORD = os.getenv("MONGO_DB_PASSWORD")
+MONGO_USERNAME = os.getenv("MONGO_DB_USERNAME")
+
+if not X_API_KEY:
+    raise ValueError("API_KEY environment variable must be set")
+if not MONGO_PASSWORD or not MONGO_USERNAME:
+    raise ValueError("MongoDB credentials must be set")
 
 @lru_cache
 def get_mongo_db():
     """Get MongoDB client - cached for performance"""
-    # Collect environment Variables
-    mongo_password = os.getenv("MONGO_DB_PASSWORD")
-    mongo_username = os.getenv("MONGO_DB_USERNAME")
 
     # grab mongo client & db
     mongo_url = MongoClient(
-        f"mongodb+srv://{mongo_username}:{mongo_password}@cluster0.3qeyv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+        f"mongodb+srv://{MONGO_USERNAME}:{MONGO_PASSWORD}@cluster0.3qeyv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
         server_api=ServerApi("1"),
     )
 
@@ -85,7 +90,29 @@ def get_task_service() -> TaskService:
         task_collection=task_collection,
     )
 
+def get_api_key(x_api_key: str = Header(None, alias="X-API-Key")):
+    """Validate API key from X-API-Key header"""
+    if not x_api_key:
+        raise HTTPException(
+            status_code=401,
+            detail="X-API-Key header required"
+        )
+    
+    if x_api_key != X_API_KEY:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid API Key"
+        )
+    return x_api_key
 
-if __name__ == "__main__":
+# Alternative using APIKeyHeader (more explicit)
+api_key_header = APIKeyHeader(name="X-API-Key")
 
-    breakpoint()
+def get_api_key_alt(api_key: str = Depends(api_key_header)):
+    """Alternative API key validation using APIKeyHeader"""
+    if api_key != X_API_KEY:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid API Key"
+        )
+    return api_key
