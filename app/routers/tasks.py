@@ -155,7 +155,7 @@ async def toggle_priority(
 # ========================================
 
 
-@router.patch("/clear-list/{list_id}", response_model=List[TaskResponse])
+@router.post("/clear-list/{list_id}", response_model=List[TaskResponse])
 @handle_task_exceptions
 async def clear_list(
     list_id: str, task_service: TaskService = Depends(get_task_service)
