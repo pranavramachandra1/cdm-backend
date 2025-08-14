@@ -3,37 +3,13 @@ from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 from datetime import datetime
 import uuid
-from pydantic import BaseModel, field_validator, ValidationInfo
+from pydantic import BaseModel
 from typing import Optional, List
 from passlib.context import CryptContext
 from datetime import datetime
 
 from app.services.users import UserService, UserNotFoundError
-
-
-# Pydantic Models:
-class ListCreate(BaseModel):
-    user_id: str
-    list_name: str
-
-
-class ListUpdate(BaseModel):
-    list_id: Optional[str] = None
-    user_id: Optional[str] = None
-    list_name: Optional[str] = None
-    created_at: Optional[datetime] = None
-    last_updated_at: Optional[datetime] = None
-    version: Optional[int] = None
-
-
-class ListResponse(BaseModel):
-    list_id: str
-    user_id: str
-    list_name: str
-    created_at: datetime
-    last_updated_at: datetime
-    version: int
-
+from app.schemas.list import ListCreate, ListUpdate, ListResponse
 
 # Exception Handling:
 

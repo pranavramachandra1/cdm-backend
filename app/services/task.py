@@ -3,54 +3,14 @@ from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 from datetime import datetime
 import uuid
-from pydantic import BaseModel, field_validator, ValidationInfo
+from pydantic import BaseModel
 from typing import Optional
 from passlib.context import CryptContext
 from typing import List
 
 from app.services.users import UserService, UserNotFoundError
 from app.services.lists import ListService, ListNotFoundError
-
-# Pydantic Models:
-
-
-class TaskCreate(BaseModel):
-    user_id: str
-    list_id: str
-    task_name: str
-    reminders: List[datetime]
-    isPriority: bool
-    isRecurring: bool
-    list_version: int
-
-
-class TaskUpdate(BaseModel):
-    user_id: Optional[str] = None
-    list_id: Optional[str] = None
-    task_id: Optional[str] = None
-    task_name: Optional[str] = None
-    reminders: Optional[List[datetime]] = None
-    isComplete: Optional[bool] = None
-    isPriority: Optional[bool] = None
-    isRecurring: Optional[bool] = None
-    createdAt: Optional[datetime] = None
-    updatedAt: Optional[datetime] = None
-    list_version: Optional[int] = None
-
-
-class TaskResponse(BaseModel):
-    user_id: str
-    list_id: str
-    task_id: str
-    task_name: str
-    reminders: List[datetime]
-    isComplete: bool
-    isPriority: bool
-    isRecurring: bool
-    createdAt: datetime
-    updatedAt: datetime
-    list_version: int
-
+from app.schemas.task import TaskCreate, TaskUpdate, TaskResponse
 
 # Exception Handling:
 class TaskNotFoundError(Exception):
@@ -130,6 +90,7 @@ class TaskService:
             "createdAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "updatedAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "list_version": task_data.list_version,
+            "description": task_data.description,
         }
 
         self.task_collection.insert_one(task_doc)
