@@ -8,26 +8,19 @@ from typing import Optional, List
 from passlib.context import CryptContext
 from datetime import datetime
 
-from app.services.users import UserService, UserNotFoundError
+from app.services.users import UserService
 from app.schemas.list import ListCreate, ListUpdate, ListResponse
 
+# Use centralized exceptions
+from app.exceptions import (
+    ListNotFoundError,
+    NoFieldsToUpdateError,
+    FailedToDeleteList,
+    InvalidParameters,
+)
+from app.exceptions.user import UserNotFoundError
+
 # Exception Handling:
-
-
-class ListNotFoundError(Exception):
-    pass
-
-
-class NoFieldsToUpdateError(Exception):
-    pass
-
-
-class FailedToDeleteList(Exception):
-    pass
-
-
-class InvalidParameters(Exception):
-    pass
 
 
 class ListService:

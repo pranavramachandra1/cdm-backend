@@ -2,6 +2,7 @@ from pydantic import BaseModel, field_validator, ValidationInfo
 from datetime import datetime
 from typing import Optional
 
+
 class UserCreate(BaseModel):
     username: str
     email: str

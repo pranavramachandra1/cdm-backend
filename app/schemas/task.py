@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional, List
 
+
 class TaskCreate(BaseModel):
     user_id: str
     list_id: str

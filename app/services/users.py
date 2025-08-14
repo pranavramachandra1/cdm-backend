@@ -6,23 +6,12 @@ from passlib.context import CryptContext
 from pymongo import collection as PyMongoCollection
 
 from app.schemas.user import UserCreate, UserUpdate, UserResponse
-
-# Custom exceptions (instead of HTTPException in business logic)
-class UserAlreadyExistsError(Exception):
-    pass
-
-
-class UserNotFoundError(Exception):
-    pass
-
-
-class InvalidCredentialsError(Exception):
-    pass
-
-
-class NoFieldsToUpdateError(Exception):
-    pass
-
+from app.exceptions.user import (
+    UserAlreadyExistsError,
+    UserNotFoundError,
+    InvalidCredentialsError,
+)
+from app.exceptions import NoFieldsToUpdateError
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

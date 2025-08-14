@@ -8,33 +8,23 @@ from typing import Optional
 from passlib.context import CryptContext
 from typing import List
 
-from app.services.users import UserService, UserNotFoundError
-from app.services.lists import ListService, ListNotFoundError
+from app.services.users import UserService
+from app.services.lists import ListService
 from app.schemas.task import TaskCreate, TaskUpdate, TaskResponse
 
+# Centralized exceptions
+from app.exceptions.user import UserNotFoundError
+from app.exceptions.list import ListNotFoundError
+from app.exceptions.task import (
+    TaskNotFoundError,
+    FailedToDeleteTaskError,
+    InvalidVersionRequest,
+    NoTasksToRemove,
+)
+from app.exceptions import NoFieldsToUpdateError
+
 # Exception Handling:
-class TaskNotFoundError(Exception):
-    pass
-
-
-class NoFieldsToUpdateError(Exception):
-    pass
-
-
-class FailedToDeleteTaskError(Exception):
-    pass
-
-
-class InvalidVersionRequest(Exception):
-    pass
-
-
-class ToggleIncompleteError(Exception):
-    pass
-
-
-class NoTasksToRemove(Exception):
-    pass
+# ...existing code...
 
 
 class TaskService:
@@ -137,14 +127,14 @@ class TaskService:
         """
 
         if not self.task_collection.find_one({"task_id": task_id}):
-            raise UserNotFoundError("User does not exist")
+            raise TaskNotFoundError("Task does not exist")
 
         result = self.task_collection.delete_one({"task_id": task_id})
 
         if result.deleted_count == 0:
             raise FailedToDeleteTaskError("Failed to delete task")
 
-        return {"message": "User deleted successfully"}
+        return {"message": "Task deleted successfully"}
 
     def _duplicate_task(self, task_id: str, new_list_version: int) -> TaskResponse:
         """
