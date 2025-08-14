@@ -9,7 +9,6 @@ from app.schemas.user import UserCreate, UserUpdate, UserResponse
 from app.exceptions.user import (
     UserAlreadyExistsError,
     UserNotFoundError,
-    InvalidCredentialsError,
 )
 from app.exceptions import NoFieldsToUpdateError
 

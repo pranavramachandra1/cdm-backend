@@ -23,9 +23,6 @@ from app.exceptions.task import (
 )
 from app.exceptions import NoFieldsToUpdateError
 
-# Exception Handling:
-# ...existing code...
-
 
 class TaskService:
 

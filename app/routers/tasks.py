@@ -3,17 +3,20 @@ from typing import List
 import logging
 from functools import wraps
 
-from app.services.task import (
-    TaskService,
-    TaskResponse,
+from app.services.task import TaskService
+from app.schemas.task import (
     TaskCreate,
     TaskUpdate,
+    TaskResponse,
+)
+from app.exceptions.task import (
     FailedToDeleteTaskError,
     TaskNotFoundError,
     InvalidVersionRequest,
-    ToggleIncompleteError,
     NoTasksToRemove,
+    ToggleIncompleteError
 )
+
 from app.dependencies import get_task_service
 
 logger = logging.getLogger(__name__)

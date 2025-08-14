@@ -1,14 +1,14 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from app.services.lists import (
-    ListService,
-    ListResponse,
-    ListCreate,
-    ListUpdate,
+
+from app.services.lists import ListService
+from app.schemas.list import ListCreate, ListUpdate, ListResponse
+from app.exceptions.list import (
     ListNotFoundError,
     FailedToDeleteList,
     InvalidParameters,
-    NoFieldsToUpdateError,
 )
+from app.exceptions import NoFieldsToUpdateError
+
 from typing import List
 from functools import wraps
 import logging

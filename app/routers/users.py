@@ -4,8 +4,16 @@ from typing import Dict
 from fastapi import FastAPI, HTTPException, Depends
 from functools import wraps
 
-from app.services.users import *
+from app.services.users import UserService
 from app.dependencies import get_user_service
+
+from app.schemas.user import UserCreate, UserUpdate, UserResponse
+from app.exceptions.user import (
+    UserAlreadyExistsError,
+    UserNotFoundError,
+    InvalidCredentialsError,
+)
+from app.exceptions import NoFieldsToUpdateError
 
 router = APIRouter(
     prefix="/users",

@@ -20,9 +20,6 @@ from app.exceptions import (
 )
 from app.exceptions.user import UserNotFoundError
 
-# Exception Handling:
-
-
 class ListService:
     def __init__(self, list_collection=None, user_collection=None):
         self.list_collection = list_collection
