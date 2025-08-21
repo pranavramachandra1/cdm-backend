@@ -1,11 +1,8 @@
 import os
-from pymongo import MongoClient
-from pymongo.server_api import ServerApi
 from datetime import datetime
 import uuid
 from pydantic import BaseModel
 from typing import Optional
-from passlib.context import CryptContext
 from typing import List
 
 from app.services.users import UserService

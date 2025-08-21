@@ -27,6 +27,7 @@ class UserUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     google_id: Optional[str] = None
+    domain_name: Optional[str] = None
 
 
 class UserResponse(BaseModel):
@@ -38,3 +39,4 @@ class UserResponse(BaseModel):
     last_name: str
     created_at: datetime
     last_updated_at: datetime
+    domain_name: str

@@ -14,11 +14,13 @@ from app.services.task import (
 from app.services.lists import (
     ListService,
     ListCreate,
+    ListUpdate,
     ListNotFoundError,
     NoFieldsToUpdateError,
-    FailedToDeleteList,
     InvalidParameters,
 )
+from app.schemas.list import ListVisibilityLevel
+from app.exceptions import ListAuthenticationError
 from app.services.users import UserService, UserCreate, UserNotFoundError
 
 
@@ -616,3 +618,217 @@ class TestListOperations:
         assert (
             "task_pFalse_rFalse" in rollover_names
         ), "Incomplete non-recurring task should be duplicated"
+
+    # Tests for list sharing functionality with get_list_with_share_token
+    
+    def test_public_list_sharing_success(self, services):
+        """Test user1 creates public list, user2 can access successfully"""
+        user_service: UserService = services["user_service"]
+        list_service: ListService = services["list_service"]
+        
+        # Create two users
+        user1_data = UserCreate(
+            username="user1", email="user1@google.com", password="password",
+            phone_number="123-456-7890", first_name="User", last_name="One",
+            google_id="google-id"
+        )
+        user2_data = UserCreate(
+            username="user2", email="user2@facebook.com", password="password",
+            phone_number="123-456-7891", first_name="User", last_name="Two",
+            google_id="google-id"
+        )
+        
+        user1 = user_service.create_user(user_data=user1_data)
+        user2 = user_service.create_user(user_data=user2_data)
+        
+        # User1 creates list
+        list_data = ListCreate(user_id=user1.user_id, list_name="Shared List")
+        list_response = list_service.create_list(list_data=list_data)
+        
+        # User1 updates list to PUBLIC
+        visibility = ListVisibilityLevel.PUBLIC.value
+        update_data = ListUpdate(visibility=visibility)
+        updated_list = list_service.update_list(list_response.list_id, update_data)
+        
+        # User2 accesses list with share token
+        shared_list = list_service.get_list_with_share_token(
+            share_token=updated_list.share_token, 
+            requester_id=user2.user_id
+        )
+        
+        assert shared_list.list_id == updated_list.list_id
+        assert shared_list.list_name == "Shared List"
+        assert shared_list.visibility == ListVisibilityLevel.PUBLIC.value
+
+    def test_private_list_sharing_denied(self, services):
+        """Test user1 creates private list, user2 cannot access"""
+        user_service: UserService = services["user_service"] 
+        list_service: ListService = services["list_service"]
+        
+        # Create two users
+        user1_data = UserCreate(
+            username="user1b", email="user1b@google.com", password="password",
+            phone_number="123-456-7892", first_name="User", last_name="One",
+            google_id="google-id"
+        )
+        user2_data = UserCreate(
+            username="user2b", email="user2b@facebook.com", password="password",
+            phone_number="123-456-7893", first_name="User", last_name="Two",
+            google_id="google-id"
+        )
+        
+        user1 = user_service.create_user(user_data=user1_data)
+        user2 = user_service.create_user(user_data=user2_data)
+        
+        # User1 creates list (defaults to PRIVATE)
+        list_data = ListCreate(user_id=user1.user_id, list_name="Private List")
+        list_response = list_service.create_list(list_data=list_data)
+        
+        # User2 attempts to access private list - should fail
+        with pytest.raises(ListAuthenticationError, match="List is private and cannot be accessed"):
+            list_service.get_list_with_share_token(
+                share_token=list_response.share_token,
+                requester_id=user2.user_id
+            )
+
+    def test_organization_only_different_domains_denied(self, services):
+        """Test ORGANIZATION_ONLY with different domains - access denied"""
+        user_service: UserService = services["user_service"]
+        list_service: ListService = services["list_service"]
+        
+        # Create users with different domains
+        user1_data = UserCreate(
+            username="user1c", email="johndoe@google.com", password="password",
+            phone_number="123-456-7894", first_name="John", last_name="Doe",
+            google_id="google-id"
+        )
+        user2_data = UserCreate(
+            username="user2c", email="abc123@facebook.com", password="password",
+            phone_number="123-456-7895", first_name="Jane", last_name="Smith",
+            google_id="google-id"
+        )
+        
+        user1 = user_service.create_user(user_data=user1_data)
+        user2 = user_service.create_user(user_data=user2_data)
+        
+        # User1 creates list and sets to ORGANIZATION_ONLY
+        list_data = ListCreate(user_id=user1.user_id, list_name="Org Only List")
+        list_response = list_service.create_list(list_data=list_data)
+        
+        update_data = ListUpdate(visibility=ListVisibilityLevel.ORGANIZATION_ONLY.value)
+        updated_list = list_service.update_list(list_response.list_id, update_data)
+        
+        # User2 from different domain attempts access - should fail
+        with pytest.raises(ListAuthenticationError, match="List is set to domain only and domain names do not match"):
+            list_service.get_list_with_share_token(
+                share_token=updated_list.share_token,
+                requester_id=user2.user_id
+            )
+
+    def test_organization_only_same_domain_success(self, services):
+        """Test ORGANIZATION_ONLY with same domain - access granted"""
+        user_service: UserService = services["user_service"]
+        list_service: ListService = services["list_service"]
+        
+        # Create users with same domain
+        user1_data = UserCreate(
+            username="user1d", email="johndoe@google.com", password="password",
+            phone_number="123-456-7896", first_name="John", last_name="Doe",
+            google_id="google-id"
+        )
+        user2_data = UserCreate(
+            username="user2d", email="abc123@google.com", password="password",
+            phone_number="123-456-7897", first_name="Jane", last_name="Smith",
+            google_id="google-id"
+        )
+        
+        user1 = user_service.create_user(user_data=user1_data)
+        user2 = user_service.create_user(user_data=user2_data)
+        
+        # User1 creates list and sets to ORGANIZATION_ONLY
+        list_data = ListCreate(user_id=user1.user_id, list_name="Org List Same Domain")
+        list_response = list_service.create_list(list_data=list_data)
+        
+        update_data = ListUpdate(visibility=ListVisibilityLevel.ORGANIZATION_ONLY.value)
+        updated_list = list_service.update_list(list_response.list_id, update_data)
+        
+        # User2 from same domain accesses list - should succeed
+        shared_list = list_service.get_list_with_share_token(
+            share_token=updated_list.share_token,
+            requester_id=user2.user_id
+        )
+        
+        assert shared_list.list_id == updated_list.list_id
+        assert shared_list.list_name == "Org List Same Domain"
+        assert shared_list.visibility == ListVisibilityLevel.ORGANIZATION_ONLY.value
+
+    def test_same_user_can_always_access_own_list(self, services):
+        """Test that the list owner can always access their own list regardless of visibility"""
+        user_service: UserService = services["user_service"]
+        list_service: ListService = services["list_service"]
+        
+        # Create user
+        user_data = UserCreate(
+            username="owner", email="owner@test.com", password="password",
+            phone_number="123-456-7898", first_name="Owner", last_name="User",
+            google_id="google-id"
+        )
+        user = user_service.create_user(user_data=user_data)
+        
+        # Create private list
+        list_data = ListCreate(user_id=user.user_id, list_name="Owner's Private List")
+        list_response = list_service.create_list(list_data=list_data)
+        
+        # Owner accesses their own private list - should succeed
+        accessed_list = list_service.get_list_with_share_token(
+            share_token=list_response.share_token,
+            requester_id=user.user_id
+        )
+        
+        assert accessed_list.list_id == list_response.list_id
+        assert accessed_list.visibility == ListVisibilityLevel.PRIVATE.value
+
+    def test_get_list_with_invalid_share_token(self, services):
+        """Test accessing list with nonexistent share token"""
+        user_service: UserService = services["user_service"]
+        list_service: ListService = services["list_service"]
+        
+        # Create user
+        user_data = UserCreate(
+            username="testuser", email="test@test.com", password="password",
+            phone_number="123-456-7899", first_name="Test", last_name="User",
+            google_id="google-id"
+        )
+        user = user_service.create_user(user_data=user_data)
+        
+        # Try to access with invalid share token - should fail
+        with pytest.raises(ListNotFoundError, match="List does not exist"):
+            list_service.get_list_with_share_token(
+                share_token="invalid-token-12345",
+                requester_id=user.user_id
+            )
+
+    def test_get_list_with_nonexistent_requester(self, services):
+        """Test accessing list with nonexistent requester user"""
+        user_service: UserService = services["user_service"]
+        list_service: ListService = services["list_service"]
+        
+        # Create list owner
+        user_data = UserCreate(
+            username="listowner", email="listowner@test.com", password="password",
+            phone_number="123-456-7800", first_name="List", last_name="Owner",
+            google_id="google-id"
+        )
+        user = user_service.create_user(user_data=user_data)
+        
+        # Create list
+        list_data = ListCreate(user_id=user.user_id, list_name="Test List")
+        list_response = list_service.create_list(list_data=list_data)
+        
+        # Try to access with nonexistent requester - should fail
+        with pytest.raises(UserNotFoundError):
+            list_service.get_list_with_share_token(
+                share_token=list_response.share_token,
+                requester_id="nonexistent-user-id"
+            )
+    

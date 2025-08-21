@@ -1,15 +1,13 @@
 import os
-from pymongo import MongoClient
-from pymongo.server_api import ServerApi
 from datetime import datetime
 import uuid
-from pydantic import BaseModel
-from typing import Optional, List
-from passlib.context import CryptContext
+from typing import List
 from datetime import datetime
+import secrets
 
 from app.services.users import UserService
-from app.schemas.list import ListCreate, ListUpdate, ListResponse
+from app.schemas.list import ListCreate, ListUpdate, ListResponse, ListVisibilityLevel, TOKEN_LENGTH
+from app.schemas.user import UserResponse
 
 # Use centralized exceptions
 from app.exceptions import (
@@ -17,6 +15,7 @@ from app.exceptions import (
     NoFieldsToUpdateError,
     FailedToDeleteList,
     InvalidParameters,
+    ListAuthenticationError,
 )
 from app.exceptions.user import UserNotFoundError
 
@@ -61,13 +60,18 @@ class ListService:
         # create list document
         list_id = self.create_list_id()
 
+        # create share token
+        share_token = secrets.token_urlsafe(32)
+
         list_doc = {
             "list_id": list_id,
             "user_id": list_data.user_id,
             "list_name": list_data.list_name,
             "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "last_updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "visibility": ListVisibilityLevel.PRIVATE.value,
             "version": 1,
+            "share_token": share_token,
         }
 
         self.list_collection.insert_one(list_doc)
@@ -75,7 +79,7 @@ class ListService:
         # Return list object:
         return ListResponse(**list_doc)
 
-    def update_list(self, list_id: str, list_data: ListUpdate):
+    def update_list(self, list_id: str, list_data: ListUpdate) -> ListResponse:
         """
         Updates a list
         """
@@ -89,6 +93,14 @@ class ListService:
 
         if not update_data:
             raise NoFieldsToUpdateError("No fields to update")
+        
+        # Check if visibility matches schema:
+        try:
+            visibility_value = update_data.get('visibility', None)
+            if visibility_value:
+                ListVisibilityLevel(visibility_value)
+        except ValueError as e:
+            raise ValueError(f"Invalid visibility level '{visibility_value}': {str(e)}")
 
         update_data["last_updated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -111,6 +123,40 @@ class ListService:
 
         # return response
         return ListResponse(**list_response)
+    
+    def get_list_with_share_token(self, share_token: str, requester_id: str) -> ListResponse:
+        """
+        Retrieves list by share token
+        """
+
+        # breakpoint()
+
+        # fetch list from DB
+        list_response = self.list_collection.find_one({"share_token": share_token})
+        
+        # If no list exists, return ListNotFound
+        if not list_response:
+            raise ListNotFoundError("List does not exist")
+
+        list_object = ListResponse(**list_response)
+
+        # fetch list owner and requester
+        list_owner: UserResponse = self.user_service.get_user(user_id = list_object.user_id)
+        list_requester: UserResponse = self.user_service.get_user(user_id = requester_id)
+
+        # if ids don't match:
+        if list_owner.user_id != list_requester.user_id:
+            
+            # Private list
+            if list_object.visibility == ListVisibilityLevel.PRIVATE.value:
+                raise ListAuthenticationError("List is private and cannot be accessed")
+            
+            # If domain names don't match and visibility is set to ORGANLIZATION_ONLY:
+            if list_object.visibility == ListVisibilityLevel.ORGANIZATION_ONLY.value and list_owner.domain_name != list_requester.domain_name:
+                raise ListAuthenticationError("List is set to domain only and domain names do not match")
+
+        # return response
+        return list_object
 
     def delete_list(self, list_id: str):
         """

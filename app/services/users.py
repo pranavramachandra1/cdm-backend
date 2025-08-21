@@ -3,7 +3,6 @@ import uuid
 from datetime import datetime
 from typing import Optional
 from passlib.context import CryptContext
-from pymongo import collection as PyMongoCollection
 
 from app.schemas.user import UserCreate, UserUpdate, UserResponse
 from app.exceptions.user import (
@@ -24,7 +23,7 @@ class UserService:
     3. Custom exceptions instead of HTTPException
     """
 
-    def __init__(self, user_collection: PyMongoCollection = None):
+    def __init__(self, user_collection = None):
         # Dependency injection - can pass in mock for testing
         self.user_collection = user_collection
 
@@ -86,6 +85,9 @@ class UserService:
         # Create user document
         user_id = self.create_user_id()
         hashed_password = self._hash_password(user_data.password)
+        
+        # Grab the organization of the user
+        domain_name = user_data.email.split("@")[-1]
 
         user_doc = {
             "user_id": user_id,
@@ -100,6 +102,7 @@ class UserService:
             ),  # only grab up until seconds
             "last_updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "google_id": user_data.google_id,
+            "domain_name": domain_name,
         }
 
         self.user_collection.insert_one(user_doc)

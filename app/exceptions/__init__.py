@@ -12,6 +12,7 @@ from .list import (
     ListNotFoundError,
     FailedToDeleteList,
     InvalidParameters,
+    ListAuthenticationError,
 )
 from .user import (
     UserError,

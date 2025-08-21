@@ -116,10 +116,21 @@ async def delete_list(
 
 @router.get(
     "/user/{user_id}", response_model=List[ListResponse]
-)  # ✅ Better URL structure
+)
 @handle_list_exceptions
 async def get_lists_by_user(
     user_id: str, list_service: ListService = Depends(get_list_service)
 ):
     """Get all lists belonging to a user"""
     return list_service.get_lists_by_user(user_id)
+
+
+@router.get(
+    "/{share_token}/user/{requester_id}", response_model=List[ListResponse]
+)
+@handle_list_exceptions
+async def get_list_through_share_token(
+    share_token: str, requester_id: str, list_service: ListService = Depends(get_list_service)
+):
+    """Gets a list that is requested via share token (list is being access through it being shared)"""
+    return list_service.get_list_with_share_token(share_token=share_token, requester_id=requester_id)
