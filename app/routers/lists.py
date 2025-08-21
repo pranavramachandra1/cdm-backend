@@ -6,6 +6,7 @@ from app.exceptions.list import (
     ListNotFoundError,
     FailedToDeleteList,
     InvalidParameters,
+    ListAuthenticationError
 )
 from app.exceptions import NoFieldsToUpdateError
 
@@ -55,6 +56,13 @@ def handle_list_exceptions(func):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="No fields provided for update",
+            )
+        
+        except ListAuthenticationError as e:
+            logger.warning(f"List is inaccessible in {func.__name__}: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="List is inaccessible to user",
             )
 
         except Exception as e:
@@ -126,7 +134,7 @@ async def get_lists_by_user(
 
 
 @router.get(
-    "/{share_token}/user/{requester_id}", response_model=List[ListResponse]
+    "/shared/{share_token}/user/{requester_id}", response_model=List[ListResponse]
 )
 @handle_list_exceptions
 async def get_list_through_share_token(
