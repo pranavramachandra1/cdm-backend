@@ -61,7 +61,7 @@ class ListService:
         list_id = self.create_list_id()
 
         # create share token
-        share_token = secrets.token_urlsafe(32)
+        share_token = secrets.token_urlsafe(TOKEN_LENGTH)
 
         list_doc = {
             "list_id": list_id,
@@ -128,8 +128,6 @@ class ListService:
         """
         Retrieves list by share token
         """
-
-        # breakpoint()
 
         # fetch list from DB
         list_response = self.list_collection.find_one({"share_token": share_token})

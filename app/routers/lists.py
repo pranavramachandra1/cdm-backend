@@ -134,7 +134,7 @@ async def get_lists_by_user(
 
 
 @router.get(
-    "/shared/{share_token}/user/{requester_id}", response_model=List[ListResponse]
+    "/shared/{share_token}/user/{requester_id}", response_model=ListResponse
 )
 @handle_list_exceptions
 async def get_list_through_share_token(

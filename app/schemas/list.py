@@ -8,9 +8,9 @@ TOKEN_LENGTH = 43
 
 # ENUMS:
 class ListVisibilityLevel(Enum):
-    PRIVATE = "private"
-    ORGANIZATION_ONLY = "organization_only" 
-    PUBLIC = "public"
+    PRIVATE = "PRIVATE"
+    ORGANIZATION_ONLY = "ORGANIZATION_ONLY" 
+    PUBLIC = "PUBLIC"
 
 # Response Formats:
 
@@ -35,5 +35,5 @@ class ListResponse(BaseModel):
     created_at: datetime
     last_updated_at: datetime
     version: int
-    visibility: str
-    share_token: str
+    visibility: Optional[str]
+    share_token: Optional[str]
